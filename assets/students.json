@@ -1,0 +1,10 @@
+[
+  {
+    "id": "0",
+    "name": "Phung Hoang",
+    "subjects": [
+      {"name": "Math", "score": 85},
+      {"name": "Science", "score": 92}
+    ]
+  }
+]
