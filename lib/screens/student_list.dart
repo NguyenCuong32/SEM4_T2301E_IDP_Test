@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'create_student.dart';
 import '../services/student_service.dart';
 import '../models/student.dart';
 import 'student_details.dart';
@@ -10,7 +11,6 @@ class StudentListScreen extends StatefulWidget {
 
 class _StudentListScreenState extends State<StudentListScreen> {
   List<Student> students = [];
-  List<Student> filteredStudents = [];
   TextEditingController searchController = TextEditingController();
 
   @override
@@ -31,18 +31,28 @@ class _StudentListScreenState extends State<StudentListScreen> {
     await StudentService.loadStudents();
     setState(() {
       students = StudentService.getStudents();
-      filteredStudents = students; // Initialize filtered list
     });
   }
 
   void _onSearchChanged() {
     setState(() {
       final query = searchController.text.toLowerCase();
-      filteredStudents = students.where((student) {
+      students = StudentService.getStudents().where((student) {
         return student.name.toLowerCase().contains(query) ||
             student.id.toString().contains(query);
       }).toList();
     });
+  }
+
+  void _navigateToAddStudentScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddStudentScreen(
+          onStudentAdded: loadStudents,
+        ),
+      ),
+    );
   }
 
   @override
@@ -50,6 +60,12 @@ class _StudentListScreenState extends State<StudentListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Student Management'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: _navigateToAddStudentScreen,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -66,9 +82,9 @@ class _StudentListScreenState extends State<StudentListScreen> {
           ),
           Expanded(
             child: ListView.builder(
-              itemCount: filteredStudents.length,
+              itemCount: students.length,
               itemBuilder: (context, index) {
-                final student = filteredStudents[index];
+                final student = students[index];
                 return ListTile(
                   title: Text(student.name),
                   subtitle: Text('ID: ${student.id}'),
@@ -86,6 +102,11 @@ class _StudentListScreenState extends State<StudentListScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToAddStudentScreen,
+        child: Icon(Icons.add),
+        tooltip: 'Add Student',
       ),
     );
   }
