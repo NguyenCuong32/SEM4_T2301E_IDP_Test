@@ -1,7 +1,134 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
 
-void main() {
-  runApp(const MyApp());
+class Student {
+  int id;
+  String name;
+  List<Subject> subjects;
+
+  Student({required this.id, required this.name, required this.subjects});
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      id: json['id'],
+      name: json['name'],
+      subjects: (json['subjects'] as List)
+          .map((subject) => Subject.fromJson(subject))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'subjects': subjects.map((subject) => subject.toJson()).toList(),
+    };
+  }
+}
+
+class Subject {
+  String name;
+  List<int> scores;
+
+  Subject({required this.name, required this.scores});
+
+  factory Subject.fromJson(Map<String, dynamic> json) {
+    return Subject(
+      name: json['name'],
+      scores: List<int>.from(json['scores']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'scores': scores,
+    };
+  }
+}
+
+Future<List<Student>> loadStudents() async {
+  final file = File('path/to/Student.json');
+  final contents = await file.readAsString();
+  final data = jsonDecode(contents) as Map<String, dynamic>;
+  return (data['students'] as List)
+      .map((studentJson) => Student.fromJson(studentJson))
+      .toList();
+}
+
+void displayAllStudents(List<Student> students) {
+  for (var student in students) {
+    print('ID: ${student.id}, Name: ${student.name}');
+    for (var subject in student.subjects) {
+      print('  Subject: ${subject.name}, Scores: ${subject.scores}');
+    }
+  }
+}
+
+Future<void> addStudent(List<Student> students, Student newStudent) async {
+  students.add(newStudent);
+  await saveStudents(students);
+}
+
+Future<void> saveStudents(List<Student> students) async {
+  final file = File('path/to/Student.json');
+  final data = {'students': students.map((student) => student.toJson()).toList()};
+  await file.writeAsString(jsonEncode(data));
+}
+
+Future<void> editStudent(List<Student> students, int id, String? newName, List<Subject>? newSubjects) async {
+  final student = students.firstWhere((student) => student.id == id, orElse: () => throw Exception('Student not found'));
+
+  if (newName != null) student.name = newName;
+  if (newSubjects != null) student.subjects = newSubjects;
+
+  await saveStudents(students);
+}
+
+void searchStudent(List<Student> students, {String? name, int? id}) {
+  final results = students.where((student) {
+    if (name != null) return student.name.contains(name);
+    if (id != null) return student.id == id;
+    return false;
+  }).toList();
+
+  for (var student in results) {
+    print('ID: ${student.id}, Name: ${student.name}');
+    for (var subject in student.subjects) {
+      print('  Subject: ${subject.name}, Scores: ${subject.scores}');
+    }
+  }
+}
+
+void main() async {
+  // Load the students from JSON
+  List<Student> students = await loadStudents();
+
+  // Display all students
+  displayAllStudents(students);
+
+  // Add a new student
+  final newStudent = Student(
+    id: 3,
+    name: 'New Student',
+    subjects: [
+      Subject(name: 'Math', scores: [10, 8, 9]),
+    ],
+  );
+  await addStudent(students, newStudent);
+
+  // Edit an existing student
+  await editStudent(students, 1, 'Updated Name', [Subject(name: 'Math', scores: [10, 9, 8])]);
+
+  // Search for a student by name
+  searchStudent(students, name: 'Le Truong Tung');
+
+  // Search for a student by ID
+  searchStudent(students, id: 2);
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
